@@ -18,7 +18,7 @@
 
 using namespace std;
 
-const int size = 100000; //длина выборки
+const int size = 1000000; //длина выборки
 vector<bool> code;                
 map<char,vector<bool>> table;  
 string alphabet;
@@ -51,11 +51,12 @@ struct MyCompare
 Node* init_tree;
 map<char, Node * > Trees;
 
+
 //генерируем текст с помощью марковского источника
 void GenerateText(map<char, double> tree)
 {
 	//находим первый символ по вектору инициализации
-	char sym;// = alphabet[0];
+	char sym;
 	srand(time(NULL));
 	double r = (rand()%100)/(100 * 1.0);
 	double sum = 0.0;
@@ -91,6 +92,7 @@ void GenerateText(map<char, double> tree)
 	fileSource.close();
 }
 
+
 void BuildTable(Node *root)
 {	
     if (root->left!=NULL) 
@@ -105,6 +107,7 @@ void BuildTable(Node *root)
     
     code.pop_back();
 }
+
 
 //строим дерево
 Node* BuildTree(map<char,double> m)
@@ -139,6 +142,7 @@ Node* BuildTree(map<char,double> m)
 }
 
 
+//генерация матрицы переходных вероятностей рандомно
 void GenerationRandom()
 {	
 	cout << "\nGenerate random" << endl;
@@ -162,11 +166,20 @@ void GenerationRandom()
 	}
 }
 
+
 //считываем матрицу переходных вероятностей из текстового файла
 void ReadFromFile()
 {
 	float str = 0;
-	ifstream matr("matrix.txt", ios::out | ios::binary);
+	string matrfile;
+	cout << " Enter filename: ";
+	cin >> matrfile;
+	ifstream matr(matrfile, ios::out | ios::binary);
+	if (matr.fail()) 
+	{
+		cout<< "\n Ошибка открытия файла";
+		exit(1);
+	}
 	int i = 0; int k = 0;
 	vector<float> v;
 	while (!matr.eof())
@@ -183,12 +196,14 @@ void ReadFromFile()
 	}
 }
 
+
 //энтропия практическая
 void PracticalEntropy(int countBytes, int len)
 {
 	double entropy2 = double(countBytes*8)/double(len);
     cout << "Practical entropy = " << entropy2 << endl;
 }
+
 
 //Сжимаем по оценке распределения вероятностей
 Node* Coder1(string sourceFile, string binaryFile)
@@ -204,7 +219,8 @@ Node* Coder1(string sourceFile, string binaryFile)
 	string str;
 	while (!fileSource.eof())
 	{ 
-		fileSource >> str; //считали симовл
+		fileSource >> str; //считываем симовл
+		//увеличиваем счетчик рапределения для данного символа 
 		for (int i = 0; i != str.length(); ++i)
 		{
 			++m.find(str[i])->second;
@@ -226,6 +242,11 @@ Node* Coder1(string sourceFile, string binaryFile)
 	//сжимаем текст
 	ifstream fileIn(sourceFile, ios::out | ios::binary);
 	ofstream fileBinary(binaryFile, ios::out | ios::binary);
+	if (fileIn.fail()) 
+	{
+		cout<< "\n Ошибка открытия файла";
+		exit(1);
+	}
 	int count=0; char buf=0;
 	int countBytes = 0; int len = 0;
 	while (!fileIn.eof())
@@ -254,6 +275,8 @@ Node* Coder1(string sourceFile, string binaryFile)
 	fileBinary.close();
 
 	//Энтропия теоритическая
+	//выведем на экран полученные вероятности
+	cout << "Probabilities: ";
 	double entropy1 = 0;
 	for (auto it = m.begin(); it != m.end(); ++it)
 	{
@@ -272,6 +295,7 @@ Node* Coder1(string sourceFile, string binaryFile)
 	return root;
 }
 
+//декодируем по оценке распределения вероятностей
 void Decoder1(Node *root)
 {
 	// считывание из файла output.txt и преобразование обратно
@@ -297,6 +321,24 @@ void Decoder1(Node *root)
 	Out.close();
 }
 
+
+//для нахождения стационарного распределения рероятностей запишем матрицу в файл и вычислим на матлабе
+void FindStatDist(map<char,vector<float>> matr1, string filename)
+{
+	float str = 0;
+	ofstream matr(filename, ios::out | ios::binary);
+	for (auto it = matr1.begin(); it != matr1.end(); ++it) 
+    {
+		for(int j = 0; j < it->second.size(); ++j)
+        {
+			matr << it->second[j] << " ";
+		}
+		matr << endl;
+	}
+	matr.close();
+}
+
+//нахождение символа в алфавите
 int findFromAlphabet(char c)
 {
 	for (int i = 0; i != alphabet.length(); ++i)
@@ -305,9 +347,10 @@ int findFromAlphabet(char c)
 	return -1;
 }
 
+
+//создаем вектор инициализации
 map<char, double> createVecInit()
 {
-	//создаем вектор инициализации
 	vector<double> pr;
 	map<char, double> tree;
 	srand(time(NULL));
@@ -349,11 +392,17 @@ void CreateTrees(map<char,vector<float>> m)
 	}
 }
 
+
 void Coding(string sourceFile, string binaryFile)
 {
 	//сжимаем текст
 	ifstream fileIn(sourceFile, ios::out | ios::binary);
 	ofstream fileBinary(binaryFile, ios::out | ios::binary);
+	if (fileIn.fail()) 
+	{
+		cout<< "\n Ошибка открытия файла";
+		exit(1);
+	}
 	int count=0; char buf=0;
 	bool flag = true;
 	char c1, c2;
@@ -403,6 +452,7 @@ void Coding(string sourceFile, string binaryFile)
 	//практическая энтропия
 	PracticalEntropy(countBytes, len);
 }
+
 
 //Сжимаем, оценивая матрицу переходных вероятностей по выходу источника
 void Coder2(string sourceFile, string binaryFile)
@@ -454,6 +504,8 @@ void Coder2(string sourceFile, string binaryFile)
 	table.clear();
 	CreateTrees(m);
 	Coding(sourceFile, binaryFile);
+	
+	FindStatDist(m, "matrixDistr2.dat");
 }
 
 //сжимаем, используя исходную матрицу
@@ -464,6 +516,7 @@ void Coder3(string sourceFile, string binaryFile)
 	Trees.clear();
 	CreateTrees(matrix);
 	Coding(sourceFile, binaryFile);
+	FindStatDist(matrix, "matrixDistr3.dat");
 }
 
 
@@ -502,13 +555,14 @@ void Decoder(string binaryFile, string decodeFile)
 int main (int argc, char *argv[])
 {
 		
-	cout << "Enter alphabet (without spaces, one line)" << endl;
+	cout << " Enter alphabet (without spaces, one line)" << endl;
 	cin >> alphabet;
+	//alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789 ";
 
 	//alphabet = "abc"; 
-	cout << "\nSelect the method of specifying the matrix:" << endl;
-	cout << "1 - generate random" << endl;
-	cout << "2 - from file matrix.txt" << endl;
+	cout << "\n Select the method of specifying the matrix:" << endl;
+	cout << " 1 - generate random" << endl;
+	cout << " 2 - from file matrix.txt" << endl;
 	int k;
 	cin >> k;
 	switch ( k )
@@ -518,29 +572,48 @@ int main (int argc, char *argv[])
 	case 2:
 		ReadFromFile(); break;
 	default: 
-		cout << "Wrong operation" << endl; 
+		cout << " Wrong operation" << endl; 
 		system("pause");
 		return 0;
 	}
-  
-	ReadFromFile();
+
+	cout << " Generate text (1) or read from a file (2) ?" << endl;
 	map<char, double> tree = createVecInit();
-	GenerateText(tree);
+	string Sourcefile = "SourceCode.txt";
+	int k1;
+	cin >> k1;
+	switch ( k1 )
+	{
+	case 1: 
+		GenerateText(tree); 
+		break;
+	case 2:
+		cout << " Enter filename: ";
+		cin >> Sourcefile;
+		break;
+	default: 
+		cout << " Wrong operation" << endl; 
+		system("pause");
+		return 0;
+	}
+
 		
-	cout << "\nCoding for the evaluation of the probability distribution" << endl;
-	Node * root = Coder1("SourceCode.txt", "Binary1.txt");
+	cout << "\n Coding for the evaluation of the probability distribution" << endl;
+	Node * root = Coder1(Sourcefile, "Binary1.txt");
 	Decoder1(root);
 	
 
-	cout << "\nCoding, assessing the transition probability matrix for power output" << endl;
-	Coder2("SourceCode.txt", "Binary2.txt");
+	cout << "\n Coding, assessing the transition probability matrix for power output" << endl;
+	Coder2(Sourcefile, "Binary2.txt");
 	Decoder("Binary2.txt", "Decode2.txt");
 
-	cout << "\nCoding, using the original matrix" << endl;
-	Coder3("SourceCode.txt", "Binary3.txt");
+
+	cout << "\n Coding, using the original matrix" << endl;
+	Coder3(Sourcefile, "Binary3.txt");
 	Decoder("Binary3.txt", "Decode3.txt");
 	
-	cout << "Decoding is complete" << endl;
+
+	cout << "\n Decoding is complete" << endl;
 	system("pause");
 	return 0;
 }
