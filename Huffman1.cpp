@@ -494,8 +494,10 @@ void Coder2(string sourceFile, string binaryFile)
 		for (int j = 0; j < pr.size(); ++j) {
 			sum += pr[j];
 		}
-		for (int j = 0; j < pr.size(); ++j) {
-			pr[j] = pr[j]/sum;
+		if (sum != 0.0) {
+			for (int j = 0; j < pr.size(); ++j) {
+				pr[j] = pr[j]/sum;
+			}
 		}
 		it->second = pr;
 	}
@@ -562,7 +564,7 @@ int main (int argc, char *argv[])
 	//alphabet = "abc"; 
 	cout << "\n Select the method of specifying the matrix:" << endl;
 	cout << " 1 - generate random" << endl;
-	cout << " 2 - from file matrix.txt" << endl;
+	cout << " 2 - from file *.txt" << endl;
 	int k;
 	cin >> k;
 	switch ( k )
